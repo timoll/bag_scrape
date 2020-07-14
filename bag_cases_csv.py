@@ -99,6 +99,22 @@ df_ch_cantons.columns = df_ch_cantons.columns.droplevel(0)
 df_ch_cantons.columns.names=[None]
 df_ch_cantons.to_csv(r'out/ch_cantons/cases.csv')
 
+df_ch_age_men = df[['cases']].xs(1, level='sex').groupby(['date', 'age']).sum().unstack(level='age')
+df_ch_age_men.columns = df_ch_age_men.columns.droplevel(0)
+df_ch_age_men.columns.names=[None]
+df_ch_age_men.to_csv(r'out/ch_age/men.csv')
+
+df_ch_age_women = df[['cases']].xs(2, level='sex').groupby(['date', 'age']).sum().unstack(level='age')
+df_ch_age_women.columns = df_ch_age_women.columns.droplevel(0)
+df_ch_age_women.columns.names=[None]
+df_ch_age_women.to_csv(r'out/ch_age/women.csv')
+
+df_ch_age_all = df[['cases']].groupby(['date', 'age']).sum().unstack(level='age')
+df_ch_age_all.columns = df_ch_age_all.columns.droplevel(0)
+df_ch_age_all.columns.names=[None]
+df_ch_age_all.to_csv(r'out/ch_age/all.csv')
+
+
 for key, cantons in regions_DE.items():
     df=df_all.query('canton in @cantons')
 for key, canton in cantons_DE.items():
