@@ -3,13 +3,8 @@ import sys
 import pandas as pd
 import requests
 import io
-import argparse
-import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.pylab as pl
-import matplotlib.dates as mdates
-import cycler
+from pathlib import Path
 
 all_link='https://www.bag.admin.ch/dam/bag/de/dokumente/mt/k-und-i/aktuelle-ausbrueche-pandemien/2019-nCoV/covid-19-basisdaten-fallzahlen.xlsx.download.xlsx/Dashboards_1&2_COVID19_swiss_data_pv.xlsx'
 cantons_DE={
@@ -48,11 +43,6 @@ regions_DE={
         'Zentralschweiz'    : ['UR', 'SZ', 'OW', 'NW', 'LU', 'ZG'],
         'Tessin'            : ['TI']
         }
-
-parser = argparse.ArgumentParser(description='get daily new cases')
-
-parser.add_argument('-c', '--canton', help="results for a canton") 
-args = parser.parse_args()
 
 
 excel_all=requests.get(all_link).content
@@ -97,28 +87,38 @@ df_all=df
 df_ch_cantons = df[['cases']].groupby(['date', 'canton']).sum().unstack(level='canton')
 df_ch_cantons.columns = df_ch_cantons.columns.droplevel(0)
 df_ch_cantons.columns.names=[None]
+
+Path(r'out/ch_cantons/').mkdir(parents=True, exist_ok=True)
 df_ch_cantons.to_csv(r'out/ch_cantons/cases.csv')
 
-df_ch_age_men = df[['cases']].xs(1, level='sex').groupby(['date', 'age']).sum().unstack(level='age')
-df_ch_age_men.columns = df_ch_age_men.columns.droplevel(0)
-df_ch_age_men.columns.names=[None]
-df_ch_age_men.to_csv(r'out/ch_age/men.csv')
+def generate_age_csv(df, path):
+    df_age_men = df[['cases']].xs(1, level='sex').groupby(['date', 'age']).sum().unstack(level='age')
+    df_age_men.columns = df_age_men.columns.droplevel(0)
+    df_age_men.columns.names=[None]
+    df_age_men.to_csv(path + 'men.csv')
 
-df_ch_age_women = df[['cases']].xs(2, level='sex').groupby(['date', 'age']).sum().unstack(level='age')
-df_ch_age_women.columns = df_ch_age_women.columns.droplevel(0)
-df_ch_age_women.columns.names=[None]
-df_ch_age_women.to_csv(r'out/ch_age/women.csv')
+    df_age_women = df[['cases']].xs(2, level='sex').groupby(['date', 'age']).sum().unstack(level='age')
+    df_age_women.columns = df_age_women.columns.droplevel(0)
+    df_age_women.columns.names=[None]
+    df_age_women.to_csv(path + 'women.csv')
 
-df_ch_age_all = df[['cases']].groupby(['date', 'age']).sum().unstack(level='age')
-df_ch_age_all.columns = df_ch_age_all.columns.droplevel(0)
-df_ch_age_all.columns.names=[None]
-df_ch_age_all.to_csv(r'out/ch_age/all.csv')
+    df_age_all = df[['cases']].groupby(['date', 'age']).sum().unstack(level='age')
+    df_age_all.columns = df_age_all.columns.droplevel(0)
+    df_age_all.columns.names=[None]
+    df_age_all.to_csv(path + 'all.csv')
 
+Path(r'out/ch_age/').mkdir(parents=True, exist_ok=True)
+generate_age_csv(df, r'out/ch_age/')
 
 for key, cantons in regions_DE.items():
     df=df_all.query('canton in @cantons')
+    Path(r'out/region_age/{}/'.format(key)).mkdir(parents=True, exist_ok=True)
+    generate_age_csv(df, r'out/region_age/{}/'.format(key))
+
 for key, canton in cantons_DE.items():
     print(key + '>' + canton)
     df= df_all.xs(key, level='canton', drop_level=False)
+    Path(r'out/canton_age/{}/'.format(key)).mkdir(parents=True, exist_ok=True)
+    generate_age_csv(df, r'out/canton_age/{}/'.format(key))
 
 
