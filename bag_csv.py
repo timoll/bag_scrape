@@ -12,6 +12,8 @@ tests_link='https://www.bag.admin.ch/dam/bag/de/dokumente/mt/k-und-i/aktuelle-au
 parser = argparse.ArgumentParser(description='get daily new cases')
 
 parser.add_argument('-d', '--delete', metavar='N', type=int, help="delete first N lines") 
+parser.add_argument('-i', '--index', help="output index", action="store_true")
+
 args = parser.parse_args()
 
 
@@ -20,8 +22,9 @@ tests_excel=requests.get(tests_link).content
 cases_df=pd.ExcelFile(cases_excel).parse(skiprows=6).set_index("Datum")
 tests_df=pd.ExcelFile(tests_excel).parse()
 
+
 tests_df=tests_df.groupby(by=['Datum','Outcome_tests']).sum()
 tests_df=tests_df.unstack(level=-1)
 result=pd.concat([cases_df["Fallzahlen pro Tag"], tests_df], axis=1, sort=False)
-print(result.to_csv(index=False, header=False)) 
+print(result.to_csv(index=args.index, header=args.index)) 
 
