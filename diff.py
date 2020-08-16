@@ -13,8 +13,8 @@ parser.add_argument('--sum', dest='sum', action='store_const',
 
 args=parser.parse_args()
 
-df1=pd.read_csv(args.old_file, index_col='date')
-df2=pd.read_csv(args.new_file, index_col='date')
+df1=pd.read_csv(args.old_file, index_col=0)
+df2=pd.read_csv(args.new_file, index_col=0)
 
 
 df=df2.subtract(df1, fill_value=0)
