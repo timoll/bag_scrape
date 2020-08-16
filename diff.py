@@ -5,23 +5,23 @@ from pathlib import Path
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('file1', metavar='F1', type=argparse.FileType('r', encoding='UTF-8'))
-parser.add_argument('file2', metavar='F2', type=argparse.FileType('r', encoding='UTF-8'))
+parser.add_argument('old_file', metavar='OLD', type=argparse.FileType('r', encoding='UTF-8'), help="csv-file with the older data")
+parser.add_argument('new_file', metavar='NEW', type=argparse.FileType('r', encoding='UTF-8'), help="csv-file with the newer data")
 parser.add_argument('--sum', dest='sum', action='store_const',
                     const=True, default=False,
                     help='sum columns')
 
 args=parser.parse_args()
 
-df1=pd.read_csv(args.file1, index_col='date')
-df2=pd.read_csv(args.file2, index_col='date')
+df1=pd.read_csv(args.old_file, index_col='date')
+df2=pd.read_csv(args.new_file, index_col='date')
 
 
-df=df1.subtract(df2, fill_value=0)
+df=df2.subtract(df1, fill_value=0)
 if args.sum :
     print(pd.DataFrame(df.sum(axis=0)).T.to_csv(index=False))
 else :
     print(df.to_csv())
 
-args.file1.close()
-args.file2.close()
+args.old_file.close()
+args.new_file.close()
