@@ -8,5 +8,6 @@ done
 find . -path ./diff -prune -o -name "*.csv" -print | while read file_path; 
 do 
     python ../../../diff.py "${file_path}" "../$(date -I)/${file_path}" > "../$(date -I)/diff/${file_path}"
-    python ../../../diff.py "${file_path}" "../$(date -I)/${file_path}" --sum > "../$(date -I)/diff/${file_path}.sum.csv"
+    file_sum_path=${file_path//.csv/_sum.csv}
+    python ../../../diff.py "${file_path}" "../$(date -I)/${file_path}" --sum > "../$(date -I)/diff/${file_sum_path}"
 done
