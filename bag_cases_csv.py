@@ -115,59 +115,77 @@ df_ch_cantons_prevalence = df_ch_cantons_prevalence[['prevalence per 100 000']].
 df_ch_cantons_prevalence.columns = df_ch_cantons_prevalence.columns.droplevel(0)
 df_ch_cantons_prevalence.columns.names=[None]
 
+df_ch_cantons_deaths = df[['deaths']].groupby(['date', 'canton']).sum().unstack(level='canton')
+df_ch_cantons_deaths.columns = df_ch_cantons_deaths.columns.droplevel(0)
+df_ch_cantons_deaths.columns.names=[None]
+
+df_ch_cantons_prevalence_deaths = df.groupby(['date', 'canton']).sum()
+df_ch_cantons_prevalence_deaths['prevalence per 100 000'] = df_ch_cantons_prevalence_deaths['deaths']/df_ch_cantons_prevalence_deaths['population']*100000
+df_ch_cantons_prevalence_deaths = df_ch_cantons_prevalence_deaths[['prevalence per 100 000']].unstack(level='canton')
+df_ch_cantons_prevalence_deaths.columns = df_ch_cantons_prevalence_deaths.columns.droplevel(0)
+df_ch_cantons_prevalence_deaths.columns.names=[None]
+
 Path(r'out/ch_cantons/').mkdir(parents=True, exist_ok=True)
 df_ch_cantons.to_csv(r'out/ch_cantons/cases.csv')
+df_ch_cantons_deaths.to_csv(r'out/ch_cantons/deaths.csv')
 df_ch_cantons_prevalence.to_csv(r'out/ch_cantons/prevalence.csv')
+df_ch_cantons_prevalence_deaths.to_csv(r'out/ch_cantons/deaths_prevalence.csv')
 
-def generate_age_csv(df, path):
-    df_age_men = df[['cases']].xs('male', level='sex').groupby(['date', 'age']).sum().unstack(level='age')
+def generate_age_csv(df, path, column):
+    df_age_men = df[[column]].xs('male', level='sex').groupby(['date', 'age']).sum().unstack(level='age')
     df_age_men.columns = df_age_men.columns.droplevel(0)
     df_age_men.columns.names=[None]
     df_age_men.to_csv(path + 'men.csv')
 
     df_age_men_prevalence = df.xs('male', level='sex').groupby(['date', 'age']).sum()
-    df_age_men_prevalence['prevalence per 100 000'] = df_age_men_prevalence['cases']/df_age_men_prevalence['population']*100000
+    df_age_men_prevalence['prevalence per 100 000'] = df_age_men_prevalence[column]/df_age_men_prevalence['population']*100000
     df_age_men_prevalence = df_age_men_prevalence[['prevalence per 100 000']].unstack(level='age')
     df_age_men_prevalence.columns = df_age_men_prevalence.columns.droplevel(0)
     df_age_men_prevalence.columns.names=[None]
     df_age_men_prevalence.to_csv(path + 'men_prevalence.csv')
 
-    df_age_women = df[['cases']].xs('female', level='sex').groupby(['date', 'age']).sum().unstack(level='age')
+    df_age_women = df[[column]].xs('female', level='sex').groupby(['date', 'age']).sum().unstack(level='age')
     df_age_women.columns = df_age_women.columns.droplevel(0)
     df_age_women.columns.names=[None]
     df_age_women.to_csv(path + 'women.csv')
 
     df_age_women_prevalence = df.xs('female', level='sex').groupby(['date', 'age']).sum()
-    df_age_women_prevalence['prevalence per 100 000'] = df_age_women_prevalence['cases']/df_age_women_prevalence['population']*100000
+    df_age_women_prevalence['prevalence per 100 000'] = df_age_women_prevalence[column]/df_age_women_prevalence['population']*100000
     df_age_women_prevalence = df_age_women_prevalence[['prevalence per 100 000']].unstack(level='age')
     df_age_women_prevalence.columns = df_age_women_prevalence.columns.droplevel(0)
     df_age_women_prevalence.columns.names=[None]
     df_age_women_prevalence.to_csv(path + 'women_prevalence.csv')
     
-    df_age_all = df[['cases']].groupby(['date', 'age']).sum().unstack(level='age')
+    df_age_all = df[[column]].groupby(['date', 'age']).sum().unstack(level='age')
     df_age_all.columns = df_age_all.columns.droplevel(0)
     df_age_all.columns.names=[None]
     df_age_all.to_csv(path + 'all.csv')
     
     df_age_all_prevalence = df.groupby(['date', 'age']).sum()
-    df_age_all_prevalence['prevalence per 100 000'] = df_age_all_prevalence['cases']/df_age_all_prevalence['population']*100000
+    df_age_all_prevalence['prevalence per 100 000'] = df_age_all_prevalence[column]/df_age_all_prevalence['population']*100000
     df_age_all_prevalence = df_age_all_prevalence[['prevalence per 100 000']].unstack(level='age')
     df_age_all_prevalence.columns = df_age_all_prevalence.columns.droplevel(0)
     df_age_all_prevalence.columns.names=[None]
     df_age_all_prevalence.to_csv(path + 'all_prevalence.csv')
 
 Path(r'out/ch_age/').mkdir(parents=True, exist_ok=True)
-generate_age_csv(df, r'out/ch_age/')
+Path(r'out/ch_age_deaths/').mkdir(parents=True, exist_ok=True)
+generate_age_csv(df, r'out/ch_age/', 'cases')
+generate_age_csv(df, r'out/ch_age_deaths/', 'deaths')
 
 for key, cantons in regions_DE.items():
     df=df_all.query('canton in @cantons')
     Path(r'out/region_age/{}/'.format(key)).mkdir(parents=True, exist_ok=True)
-    generate_age_csv(df, r'out/region_age/{}/'.format(key))
+    Path(r'out/region_age/{}_deaths/'.format(key)).mkdir(parents=True, exist_ok=True)
+    generate_age_csv(df, r'out/region_age/{}/'.format(key), 'cases')
+    generate_age_csv(df, r'out/region_age/{}_deaths/'.format(key), 'deaths')
 
 for key, canton in cantons_DE.items():
     print(key + '>' + canton)
     df= df_all.xs(key, level='canton', drop_level=False)
     Path(r'out/canton_age/{}/'.format(key)).mkdir(parents=True, exist_ok=True)
-    generate_age_csv(df, r'out/canton_age/{}/'.format(key))
+    Path(r'out/canton_age/{}_deaths/'.format(key)).mkdir(parents=True, exist_ok=True)
+    generate_age_csv(df, r'out/canton_age/{}/'.format(key), 'cases')
+    generate_age_csv(df, r'out/canton_age/{}_deaths/'.format(key), 'deaths')
 
 
