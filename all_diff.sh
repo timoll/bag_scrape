@@ -1,13 +1,27 @@
 #!/bin/bash
-cd out/report_date/$(date -I -d "yesterday");
-find . -mindepth 1 -path ./diff  -prune -o  -type d -print | while read folders; 
+OLD_PATH=out/report_date/$(date -I -d "yesterday");
+NEW_PATH=out/report_date/$(date -I);
+DIFF_PATH=$NEW_PATH/diff;
+CURRENT_DIR=$(pwd)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+while getopts o:n:d: opt
 do
-    mkdir -p "../$(date -I)/diff/${folders}";
+   case $opt in
+       o) OLD_PATH=$OPTARG;;
+       n) NEW_PATH=$OPTARG;DIFF_PATH=$NEW_PATH/diff;;
+       d) DIFF_PATH=$OPTARG;;
+   esac
 done
 
-find . -path ./diff -prune -o -name "*.csv" -print | while read file_path; 
+find $OLD_PATH -mindepth 1 -path $OLD_PATH/diff  -prune -o  -type d -printf '%P\n' | while read folders; 
+do
+    mkdir -p "$DIFF_PATH/${folders}";
+done
+
+find $OLD_PATH -path $OLD_PATH/diff -prune -o -name "*.csv" -printf '%P\n' | while read file_path; 
 do 
-    python ../../../diff.py "${file_path}" "../$(date -I)/${file_path}" > "../$(date -I)/diff/${file_path}"
+    python $SCRIPT_DIR/diff.py "${OLD_PATH}/${file_path}" "${NEW_PATH}/${file_path}" > "${DIFF_PATH}/${file_path}"
     file_sum_path=${file_path//.csv/_sum.csv}
-    python ../../../diff.py "${file_path}" "../$(date -I)/${file_path}" --sum > "../$(date -I)/diff/${file_sum_path}"
+    python $SCRIPT_DIR/diff.py "${OLD_PATH}/${file_path}" "${NEW_PATH}/${file_path}" --sum  > "${DIFF_PATH}/${file_sum_path}"
 done
