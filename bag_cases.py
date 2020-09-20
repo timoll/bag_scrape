@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
 import matplotlib.dates as mdates
 import cycler
+import covid_importer.importer as importer
+import matplotlib.ticker as mtick
+import matplotlib.patheffects as PathEffects
 
 def generate_figure(df, title, name):
     date_age=df.groupby(['date', 'age']).sum()[['cases']]
@@ -57,7 +60,61 @@ def generate_figure(df, title, name):
     plt.savefig(name)
     plt.close()
 
-all_link='https://www.bag.admin.ch/dam/bag/de/dokumente/mt/k-und-i/aktuelle-ausbrueche-pandemien/2019-nCoV/covid-19-basisdaten-fallzahlen.xlsx.download.xlsx/Dashboards_1&2_COVID19_swiss_data_pv.xlsx'
+def generate_growth_figure(df, title, name):
+    fig, ax1 =plt.subplots(1,1)
+    fig.set_size_inches(18.5,10.5, forward=True)
+    dates=df.index.strftime('%Y-%m-%d')
+    change=df['change']*100
+    average=df['average']*100
+
+    plt.ylim(-100,150)
+
+    ax1.bar(x=dates, height=change, color=df['change'].map(lambda x : 'lightcoral' if (x > 0) else 'cornflowerblue'), label='Anstieg gegenüber vorwoche')
+    ax1.plot(dates, average, label='Durchschnittlicher Anstieg über 4 Wochen', color='black', linewidth=3)
+    ax1.yaxis.set_major_formatter(mtick.PercentFormatter())
+    ax1.set_axisbelow(True)
+    ax1.yaxis.grid(True)
+
+    plt.xticks(rotation=90)
+    
+    for x,y1,y2 in zip(dates,change, average):
+
+        label1 = "{:.0f}%".format(y1)
+        label2 = "{:.0f}%".format(y2)
+        y1_cord=10
+        y2_cord=15
+        color='lightcoral'
+        if y1<0:
+            y1_cord=-10
+            color='cornflowerblue'
+        if y2<0:
+            y2_cord=-15
+        if(abs(y1-y2)<10):
+            y2_cord*=-1
+        xy1=(0,y1_cord)
+        xy2=(0,y2_cord)
+
+        txt=plt.annotate(label1, # this is the text
+                 (x,min(150,y1)), # this is the point to label
+                 textcoords="offset points", # how to position the text
+                 xytext=xy1, # distance from text to points (x,y)
+                 ha='center', # horizontal alignment can be left, right or center
+                 va='center',
+                 color=color)
+        txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='white')])
+        
+        txt=plt.annotate(label2, # this is the text
+                 (x,min(150,y2)), # this is the point to label
+                 textcoords="offset points", # how to position the text
+                 xytext=xy2, # distance from text to points (x,y)
+                 ha='center', # horizontal alignment can be left, right or center
+                 va='center')
+    
+        txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='white')])
+    plt.title(title, y=1.05)     
+    plt.savefig(name)
+    plt.close()
+
 cantons_DE={
         'AG': 'Aargau', 
         'AR': 'Appelzell Ausserrhoden',
@@ -100,52 +157,42 @@ parser = argparse.ArgumentParser(description='get daily new cases')
 parser.add_argument('-c', '--canton', help="results for a canton") 
 args = parser.parse_args()
 
-
-excel_all=requests.get(all_link).content
-cases_df=pd.ExcelFile(excel_all).parse().set_index("fall_dt")
-deaths_df=pd.ExcelFile(excel_all).parse().set_index("pttoddat")
-
-cases_df=cases_df[cases_df.index.notnull()]
-deaths_df=deaths_df[deaths_df.index.notnull()]
-
-cases_df.reset_index(inplace=True)
-deaths_df.reset_index(inplace=True)
-
-cases_df.rename(columns={'fall_dt': 'date', 'ktn': 'canton', 'akl': 'age', 'fallklasse_3':'cases'}, inplace=True) 
-deaths_df.rename(columns={'pttoddat': 'date', 'ktn': 'canton', 'akl': 'age', 'pttod_1':'deaths'}, inplace=True) 
-
-cases_index=pd.MultiIndex.from_frame(cases_df[['date', 'canton', 'age', 'sex']])
-deaths_index=pd.MultiIndex.from_frame(deaths_df[['date', 'canton', 'age', 'sex']])
-
-cases_df.set_index(cases_index, inplace=True)
-deaths_df.set_index(deaths_index, inplace=True)
-
-cases_df=cases_df[['cases']]
-deaths_df=deaths_df[['deaths']]
-
-df=cases_df.join(deaths_df, how='outer')
-#df=cases_df[['cases']].merge(deaths_df[['deaths']], left_index=True, right_on=['date', 'canton','age', 'sex'])
-
-df.fillna(value=0, inplace=True)
-print(df.groupby(['date','age']).sum())
-print(df.groupby(['age']).sum())
-print(df.query('canton in ["BE","ZH"]').groupby('canton').sum())
-print(df.xs('BE', level='canton', drop_level=False))
-print(df.xs('BE', level='canton', drop_level=False).groupby(['age']).sum())
-print(df.sum())
+df=importer.import_ch()
+#print(df.query('canton in ["BE","ZH"]').groupby('canton').sum())
+#print(df.xs('BE', level='canton', drop_level=False))
+#print(df.xs('BE', level='canton', drop_level=False).groupby(['age']).sum())
+#print(df.sum())
 #df.xs('BE', level='canton', drop_level=False).groupby(['date']).sum().plot()
 #df.xs('BE', level='canton', drop_level=False).groupby(['date']).sum().rolling(window=7).mean().plot()
 #plt.show()
+
+df_weekly_base = pd.DataFrame(df['cases'].groupby([pd.Grouper(level='date', freq='W-MON', label='left'),'canton']).sum())
+df_weekly_ch = df_weekly_base.groupby('date').sum()
+df_weekly_ch['change']=df_weekly_ch.pct_change()
+df_weekly_ch['average']=(1.+df_weekly_ch['change']).rolling(window=4).apply(np.prod, raw=True).pow(1/4)-1
+
+weekly_base_text='Wachstum der neuen Fälle gegenüber der Vorwoche sowie der gleitende Schnitt des Wachstums über 4 Wochen'
+generate_growth_figure(df_weekly_ch.iloc[8:-1],weekly_base_text + ' in der Schweiz', 'CH_growth')
+
 
 df_all=df
 generate_figure(df, 'Altersverteilung der neuen Fälle in der Schweiz', 'CH')
 
 for key, cantons in regions_DE.items():
-    df=df_all.query('canton in @cantons')
-    generate_figure(df,'Altersverteilung der neuen Fälle in der Region {}'.format(key), key)
+    print(key)
+    generate_figure(df_all.query('canton in @cantons'),'Altersverteilung der neuen Fälle in der Region {}'.format(key), key)
+    df_weekly= df_weekly_base.query('canton in @cantons').groupby('date').sum()
+    df_weekly['change']=df_weekly.pct_change()
+    df_weekly['average']=(1.+df_weekly['change']).rolling(window=4).apply(np.prod, raw=True).pow(1/4)-1
+    generate_growth_figure(df_weekly.iloc[8:-1], weekly_base_text + ' in der Region {}'.format(key), '{}_growth'.format(key))
+
 for key, canton in cantons_DE.items():
     print(key + '>' + canton)
-    df= df_all.xs(key, level='canton', drop_level=False)
-    generate_figure(df, 'Altersverteilung der neuen Fälle im Kanton {}'.format(canton), key)
+    generate_figure(df_all.xs(key, level='canton', drop_level=False), 'Altersverteilung der neuen Fälle im Kanton {}'.format(canton), key)
+    df_weekly= df_weekly_base.xs(key, level='canton', drop_level=True).groupby('date').sum()
+    df_weekly['change']=df_weekly.pct_change()
+    df_weekly['average']=(1.+df_weekly['change']).rolling(window=4).apply(np.prod, raw=True).pow(1/4)-1
+    #df_weekly.reset_index(inplace=True)
+    generate_growth_figure(df_weekly.iloc[8:-1], weekly_base_text + ' im Kanton {}'.format(canton), '{}_growth'.format(key))
 
 

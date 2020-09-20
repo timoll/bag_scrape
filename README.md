@@ -8,4 +8,5 @@ bag_cases.py is a script that generates some graphs with the average age distrib
 ## Setup
 * create virtualenv with python3
 * install modules pandas, xlrd matplotlib, requests
+* install covid_importer with ```pip install -e covid_importer```
 * run scripts
