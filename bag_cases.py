@@ -63,7 +63,7 @@ def generate_figure(df, title, name):
 def generate_growth_figure(df, title, name):
     fig, ax1 =plt.subplots(1,1)
     fig.set_size_inches(18.5,10.5, forward=True)
-    dates=df.index.strftime('%Y-%m-%d')
+    dates=(df.index+pd.DateOffset(1)).strftime('%Y-%m-%d')
     change=df['change']*100
     average=df['average']*100
 
@@ -167,7 +167,7 @@ df=importer.import_ch()
 #df.xs('BE', level='canton', drop_level=False).groupby(['date']).sum().rolling(window=7).mean().plot()
 #plt.show()
 
-df_weekly_base = pd.DataFrame(df['cases'].groupby([pd.Grouper(level='date', freq='W-MON', label='left'),'canton']).sum())
+df_weekly_base = pd.DataFrame(df['cases'].groupby([pd.Grouper(level='date', freq='W-SUN', label='left'),'canton']).sum())
 df_weekly_ch = df_weekly_base.groupby('date').sum()
 df_weekly_ch['change']=df_weekly_ch.pct_change()
 df_weekly_ch['average']=(1.+df_weekly_ch['change']).rolling(window=4).apply(np.prod, raw=True).pow(1/4)-1
