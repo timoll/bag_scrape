@@ -69,13 +69,13 @@ def generate_growth_figure(df, title, name):
 
     plt.ylim(-100,150)
 
-    ax1.bar(x=dates, height=change, color=df['change'].map(lambda x : 'lightcoral' if (x > 0) else 'cornflowerblue'), label='Anstieg gegenüber vorwoche')
+    ax1.bar(x=dates, height=change, color=df['change'].map(lambda x : 'lightcoral' if (x > 0) else 'cornflowerblue'), label='Anstieg gegenüber Vorwoche')
     ax1.plot(dates, average, label='Durchschnittlicher Anstieg über 4 Wochen', color='black', linewidth=3)
     ax1.yaxis.set_major_formatter(mtick.PercentFormatter())
     ax1.set_axisbelow(True)
     ax1.yaxis.grid(True)
 
-    plt.xticks(rotation=90)
+    fig.autofmt_xdate(rotation=45)
     
     for x,y1,y2 in zip(dates,change, average):
 
@@ -111,7 +111,8 @@ def generate_growth_figure(df, title, name):
                  va='center')
     
         txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='white')])
-    plt.title(title, y=1.05)     
+    plt.title(title, y=1.05)
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1)
     plt.savefig(name)
     plt.close()
 
