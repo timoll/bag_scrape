@@ -18,8 +18,8 @@ def generate_figure(df, title, name):
     date_age=df.groupby(['date', 'age']).sum()[['cases']]
     date=df.groupby(['date']).sum()[['cases']]
 
-    date_age =date_age.groupby(level='age').cases.apply(lambda x: x.rolling(window=7).mean()).unstack()[:-1]
-    date=date.rolling(window=7).mean().dropna()[:-1]
+    date_age =date_age.groupby(level='age').cases.apply(lambda x: x.rolling(window=7).mean()).unstack()[:-2]
+    date=date.rolling(window=7).mean().dropna()[:-2]
 
     date_age_relative=date_age.divide(date_age.sum(axis=1), axis=0).dropna()
 
