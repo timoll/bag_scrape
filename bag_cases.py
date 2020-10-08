@@ -40,7 +40,7 @@ def generate_figure(df, title, name):
     ax1.yaxis.grid(color='black', linestyle='dashed')
 
     mloc = mdates.MonthLocator()
-    wloc = mdates.WeekdayLocator()
+    wloc = mdates.DayLocator([1,16])
 
     ax1.xaxis.set_major_locator(wloc)
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
