@@ -1,6 +1,11 @@
 import pandas as pd
 import requests
+def import_ch_summary():
+    summary_link='https://www.bag.admin.ch/dam/bag/de/dokumente/mt/k-und-i/aktuelle-ausbrueche-pandemien/2019-nCoV/covid-19-datengrundlage-lagebericht.xlsx.download.xlsx/200325_Datengrundlage_Grafiken_COVID-19-Bericht.xlsx'
 
+    excel_summary=requests.get(summary_link).content
+    df=pd.ExcelFile(excel_summary).parse(header=None, skiprows=7,names=['date','cases','hospitalizations','deaths'], usecols='A,B,D,F', index_col=0).fillna(0).astype('int32')
+    return df
 def import_ch():
 	all_link='https://www.bag.admin.ch/dam/bag/de/dokumente/mt/k-und-i/aktuelle-ausbrueche-pandemien/2019-nCoV/covid-19-basisdaten-fallzahlen.xlsx.download.xlsx/Dashboards_1&2_COVID19_swiss_data_pv.xlsx'
 

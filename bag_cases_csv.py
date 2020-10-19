@@ -50,6 +50,7 @@ regions_DE={
         }
 
 df=importer.import_ch()
+df_summary=importer.import_ch_summary()
 df_prevalence=df.groupby(['date', 'age']).sum()
 df_prevalence['prevalence per 100 000']=df_prevalence['cases']/df_prevalence['population']*100000
 df_weekly = pd.DataFrame(df.xs('BE', level='canton', drop_level=False)['cases'].groupby([pd.Grouper(level='date', freq='W-MON', label='left')]).sum())
@@ -89,6 +90,8 @@ df_ch_cantons_prevalence_deaths = df_ch_cantons_prevalence_deaths[['prevalence p
 df_ch_cantons_prevalence_deaths.columns = df_ch_cantons_prevalence_deaths.columns.droplevel(0)
 df_ch_cantons_prevalence_deaths.columns.names=[None]
 
+Path(r'out/ch_summary/').mkdir(parents=True, exist_ok=True)
+df_summary.to_csv(r'out/ch_summary/summary.csv')
 Path(r'out/ch_cantons/').mkdir(parents=True, exist_ok=True)
 df_ch_cantons.to_csv(r'out/ch_cantons/cases.csv')
 df_ch_cantons_deaths.to_csv(r'out/ch_cantons/deaths.csv')
