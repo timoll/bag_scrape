@@ -48,7 +48,7 @@ def import_ch():
 	cases_df=cases_df[['cases']]
 	deaths_df=deaths_df[['deaths']]
 	population_df=population_df[['population']]
-	df=cases_df.join(deaths_df, how='outer')
+	df=cases_df.append(deaths_df)
 	population_df = population_df.groupby(['canton','age','sex']).sum()
 
 	df.fillna(value=0, inplace=True)
